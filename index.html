@@ -2,7 +2,7 @@
 <html lang="nb">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#05060a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -112,6 +112,8 @@ input:focus{border-color:#f5c542}
   .screen{padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(20px,env(safe-area-inset-bottom))}
   #beat-screen{padding-top:calc(26px + env(safe-area-inset-top));padding-bottom:calc(30px + env(safe-area-inset-bottom))}
 }
+#rotate{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:60;background:#05060a;color:#fff0a0;font-size:26px;align-items:center;justify-content:center;text-align:center;padding:20px}
+@media (orientation:landscape) and (max-height:500px){ #rotate{display:flex} }
 </style>
 </head>
 <body>
@@ -159,6 +161,7 @@ input:focus{border-color:#f5c542}
 <div id="burst"></div>
 <div id="flash"></div>
 <canvas id="fx"></canvas>
+<div id="rotate">Hold telefonen på høykant 📱</div>
 
 <script>
 (function(){
@@ -671,7 +674,28 @@ function sizeFx(){
 window.addEventListener('resize', () => { sizeFx(); if(running){ sizeEcg(); sizeTug(); } });
 sizeFx();
 document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('gesturechange', e => e.preventDefault());
+document.addEventListener('gestureend', e => e.preventDefault());
 document.addEventListener('touchmove', e => e.preventDefault(), {passive: false});
+// iPhone Safari zooms in on a double-tap, and the pack is tapped quickly five times. Block that.
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => {
+  const n = Date.now();
+  if(n - lastTouchEnd < 400) e.preventDefault();
+  lastTouchEnd = n;
+}, {passive: false});
+document.addEventListener('dblclick', e => e.preventDefault());
+// if the page ever ends up zoomed anyway, snap it back
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', () => {
+    if(window.visualViewport.scale > 1.02){
+      const vp = document.querySelector('meta[name=viewport]');
+      const keep = vp.getAttribute('content');
+      vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1');
+      setTimeout(() => vp.setAttribute('content', keep), 300);
+    }
+  });
+}
 // home-screen icon, drawn here so no extra file is needed
 (function(){
   try{
