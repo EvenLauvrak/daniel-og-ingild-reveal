@@ -4,20 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#05060a">
-<title>Daniel og Ingild baby reveal</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Baby Reveal">
+<meta name="format-detection" content="telephone=no">
+<title>Daniel og Ingvild baby reveal</title>
 <style>
 :root{
   --c1:#f5c542; --c2:#fff0a0; --c3:#3a2a00;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-html,body{margin:0;height:100%;background:#05060a;color:#fff;overflow:hidden;
+html,body{margin:0;height:100%;background:#05060a;color:#fff;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;-webkit-touch-callout:none;
   font-family:Impact,'Arial Black','Helvetica Neue',Arial,sans-serif;letter-spacing:.5px}
-#app{position:fixed;inset:0;height:100dvh}
+#app{position:fixed;top:0;right:0;bottom:0;left:0}
 .screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center}
 .screen.active{display:flex}
 body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
-#fx{position:fixed;inset:0;pointer-events:none;z-index:40}
+#fx{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:40}
 #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:45}
 #burst{position:fixed;left:50%;top:45%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;
   background:radial-gradient(circle,var(--c2),var(--c1) 55%,var(--c3));opacity:0;pointer-events:none;z-index:30;transform:scale(0)}
@@ -102,13 +107,18 @@ input:focus{border-color:#f5c542}
 #meme{font:700 16px Arial,sans-serif;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.6);min-height:24px;letter-spacing:0}
 .row2{display:flex;gap:10px;margin-top:4px}
 .row2 .btn{font-size:18px;padding:12px 14px;background:rgba(0,0,0,.55);border-color:#fff}
+/* iPhone notch and home bar */
+@supports (padding: max(0px)){
+  .screen{padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(20px,env(safe-area-inset-bottom))}
+  #beat-screen{padding-top:calc(26px + env(safe-area-inset-top));padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+}
 </style>
 </head>
 <body>
 <div id="app">
 
   <section id="setup" class="screen active">
-    <div class="logo">DANIEL<br>OG INGILD<br><span>BABY REVEAL</span></div>
+    <div class="logo">DANIEL<br>OG INGVILD<br><span>BABY REVEAL</span></div>
     <div class="hint">Bare den som kjenner hemmeligheten velger under. Gi deretter telefonen videre og skru opp lyden. Musikken starter når pakken åpnes.</div>
     <div class="hint">Hva ligger i pakken?</div>
     <div class="row">
@@ -231,10 +241,17 @@ function ac(){
   if(!A){
     const AC = window.AudioContext || window.webkitAudioContext;
     if(!AC) return null;
+    // iOS: play sound even when the silent switch is on
+    try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e){}
     A = new AC();
     master = A.createGain(); master.gain.value = 0.9;
     const comp = A.createDynamicsCompressor();
     master.connect(comp); comp.connect(A.destination);
+    // iOS: a tiny silent sound inside the first tap unlocks audio
+    try{
+      const sb = A.createBuffer(1, 1, 22050), ss = A.createBufferSource();
+      ss.buffer = sb; ss.connect(A.destination); ss.start(0);
+    }catch(e){}
   }
   if(A.state === 'suspended') A.resume();
   return A;
@@ -291,6 +308,7 @@ function vib(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
 /* ---------- setup ---------- */
 document.querySelectorAll('#setup .btn').forEach(b => {
   b.addEventListener('click', () => {
+    try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); }catch(e){}
     ac();
     loadMusic();   // decode the song in the background while the pack screen is open
     gender = b.dataset.g;
@@ -302,7 +320,7 @@ document.querySelectorAll('#setup .btn').forEach(b => {
 /* ---------- pack ---------- */
 function buildPack(){
   const inner = '<div class="pk-in"><div class="pk-top">PREMIUM</div><div class="pk-ball">&#128118;</div>' +
-    '<div class="pk-title">DANIEL<br>&amp; INGILD</div><div class="pk-sub">BABY REVEAL &bull; 1 KORT</div></div>';
+    '<div class="pk-title">DANIEL<br>&amp; INGVILD</div><div class="pk-sub">BABY REVEAL &bull; 1 KORT</div></div>';
   $('pack').innerHTML = '<div class="half top">' + inner + '</div><div class="half bot">' + inner + '</div>';
 }
 function resetPack(){
@@ -542,7 +560,7 @@ function frame(now){
   if($('status').textContent !== st) $('status').textContent = st;
 
   const k = Math.min(e / DUR, 1);
-  $('price').textContent = Math.floor(priceTarget * Math.pow(k, 2.2)).toLocaleString('nb-NO') + ' 🪙';
+  $('price').textContent = Math.floor(priceTarget * Math.pow(k, 2.2)).toLocaleString('nb-NO') + ' 💰';
   if(now - lastBpmUpdate > 450){
     lastBpmUpdate = now;
     bpmShown = Math.round(bpmBase + rnd(-3, 3));
@@ -652,6 +670,23 @@ function sizeFx(){
 }
 window.addEventListener('resize', () => { sizeFx(); if(running){ sizeEcg(); sizeTug(); } });
 sizeFx();
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('touchmove', e => e.preventDefault(), {passive: false});
+// home-screen icon, drawn here so no extra file is needed
+(function(){
+  try{
+    const c = document.createElement('canvas'); c.width = c.height = 180;
+    const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 180, 180);
+    g.addColorStop(0, '#fff0a0'); g.addColorStop(.5, '#f5c542'); g.addColorStop(1, '#9a6b00');
+    x.fillStyle = g; x.fillRect(0, 0, 180, 180);
+    x.font = '110px serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText('\uD83D\uDC76', 90, 98);
+    const l = document.createElement('link');
+    l.rel = 'apple-touch-icon'; l.href = c.toDataURL('image/png');
+    document.head.appendChild(l);
+  }catch(e){}
+})();
 function mk(x, y, vx, vy, cols, emo, emoChance){
   const isEmo = Math.random() < emoChance;
   return {x, y, vx, vy, size: isEmo ? rnd(22, 40) : rnd(6, 14), rot: rnd(0, 6.28), vr: rnd(-.25, .25),
