@@ -152,8 +152,8 @@ input:focus{border-color:#f5c542}
     <div class="card" id="card"></div>
     <div id="meme"></div>
     <div class="row2">
-      <button class="btn" id="again">RUN IT BACK</button>
-      <button class="btn" id="newone">NEW PACK</button>
+      <button class="btn" id="again">KJØR PÅ NYTT</button>
+      <button class="btn" id="newone">NY PAKKE</button>
     </div>
   </section>
 
@@ -393,7 +393,7 @@ function drawEcg(){
 /* tug of war: blue on the left, pink on the right, fighting over the screen */
 const tug = $('tug'), tc = tug.getContext('2d');
 let tW = 0, tH = 0;
-let seam = {pos: .5, vel: 0}, tugPhase = 0, kick = 0, countTarget = null;
+let seam = {pos: .5, vel: 0}, tugPhase = 0, kick = 0, countTarget = null, tugSide = 1, flipT = 0;
 function sizeTug(){
   const dpr = window.devicePixelRatio || 1;
   tW = window.innerWidth; tH = window.innerHeight;
@@ -401,15 +401,15 @@ function sizeTug(){
   tc.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 function drawTug(dt, e){
-  const b = gender === 'girl' ? -1 : 1;   // girl pulls the seam left so pink gets more ground, boy pulls it right
   const prog = Math.min(1, e / DUR);
-  // each clue gives the true color a bit more ground
-  const lean = (e >= 6900 ? .08 : 0) + (e >= 14300 ? .08 : 0) + (e >= 21800 ? .09 : 0);
-  const amp = .05 + .30 * Math.pow(prog, 1.5);
+  // The seam swaps sides again and again. It never favors the real answer, so it gives nothing away.
   const freq = .35 + 1.4 * prog;
   tugPhase += dt * freq * 6.283;
   kick *= Math.exp(-dt * 6);
-  let target = .5 + b * lean + amp * Math.sin(tugPhase) + kick;
+  flipT += dt;
+  if(flipT >= 2.4 - 1.5 * prog){ flipT = 0; tugSide = -tugSide; }   // swaps faster and faster
+  const amp = .20 + .22 * prog;
+  let target = .5 + tugSide * amp + .05 * Math.sin(tugPhase) + kick;
   if(countTarget !== null) target = countTarget + .02 * Math.sin(tugPhase * 6);
   const acc = (target - seam.pos) * 60 - seam.vel * 9;
   seam.vel += acc * dt;
@@ -499,7 +499,7 @@ function showWord(it){
       {transform: 'translate(-8px,3px)'}, {transform: 'translate(8px,-3px)'},
       {transform: 'translate(-6px,2px)'}, {transform: 'translate(6px,-2px)'}, {transform: 'none'}
     ], {duration: 400, delay: 260});
-    kick += (gender === 'girl' ? -1 : 1) * .12;   // the clue shoves the seam toward the true color
+    kick += (Math.random() < .5 ? -1 : 1) * .12;   // a random shove, so it says nothing about the answer
   } else {
     wordHit();
   }
@@ -515,7 +515,8 @@ function startBeat(){
   priceTarget = girl ? 4200000 : 750;
   script = buildScript(girl);
   scriptIdx = 0; countStarted = false; sfxSched = false; lastCount = 0; lastBpmUpdate = 0;
-  seam = {pos: .5, vel: 0}; tugPhase = 0; kick = 0; countTarget = null;
+  seam = {pos: .5, vel: 0}; tugPhase = Math.random() * 6.283; kick = 0; countTarget = null;
+  tugSide = Math.random() < .5 ? -1 : 1; flipT = 0;   // random first side, same for boy and girl
   go('beat-screen');
   sizeEcg(); sizeTug();
   ecgBuf = []; ecgQ = [];
@@ -541,7 +542,7 @@ function doBeat(){
   thump(power);
   vib([40, 60, 30]);
   PATTERN.forEach(v => ecgQ.push(v * (0.3 + 0.7 * power)));
-  kick += (gender === 'girl' ? -1 : 1) * (0.01 + 0.03 * power);
+  kick += (Math.random() < .5 ? -1 : 1) * .04;
   $('clue').animate([{transform: 'scale(' + (1 + .12 * power) + ')'}, {transform: 'scale(1)'}], {duration: 300, easing: 'ease-out'});
   const sh = 9 * power;
   $('app').animate([
