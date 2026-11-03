@@ -54,7 +54,7 @@ input:focus{border-color:#f5c542}
 .half.bot{clip-path:polygon(0 20%,10% 17%,19% 20%,28% 17%,37% 20%,46% 17%,55% 20%,64% 17%,73% 20%,82% 17%,91% 20%,100% 18%,100% 100%,0 100%)}
 .pk-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#2a1d00;gap:4px;padding-top:14px}
 .pk-top{font-size:13px;letter-spacing:4px}
-.pk-ball{font-size:64px;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25))}
+.pk-ball{font-size:54px;letter-spacing:6px;white-space:nowrap;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25))}
 .pk-title{font-size:40px;line-height:.95;text-shadow:0 2px 0 rgba(255,255,255,.5)}
 .pk-sub{font:700 11px Arial,sans-serif;letter-spacing:2px;margin-top:6px}
 #pack.shake{animation:none}
@@ -119,18 +119,9 @@ input:focus{border-color:#f5c542}
 <body>
 <div id="app">
 
-  <section id="setup" class="screen active">
-    <div class="logo">DANIEL<br>OG INGVILD<br><span>BABY REVEAL</span></div>
-    <div class="hint">Bare den som kjenner hemmeligheten velger under. Gi deretter telefonen videre og skru opp lyden. Musikken starter når pakken åpnes.</div>
-    <div class="hint">Hva ligger i pakken?</div>
-    <div class="row">
-      <button class="btn" data-g="boy">GUTT</button>
-      <button class="btn" data-g="girl">JENTE</button>
-    </div>
-  </section>
-
-  <section id="pack-screen" class="screen">
+  <section id="pack-screen" class="screen active">
     <div class="tapmsg">TRYKK PÅ PAKKEN FOR Å ÅPNE</div>
+    <div class="hint">Skru opp lyden 🔊</div>
     <div class="pack-wrap"><div id="pack"></div></div>
     <div class="meter"><div id="meter-fill"></div></div>
   </section>
@@ -153,7 +144,6 @@ input:focus{border-color:#f5c542}
     <div id="meme"></div>
     <div class="row2">
       <button class="btn" id="again">KJØR PÅ NYTT</button>
-      <button class="btn" id="newone">NY PAKKE</button>
     </div>
   </section>
 
@@ -166,7 +156,7 @@ input:focus{border-color:#f5c542}
 <script>
 (function(){
 const $ = id => document.getElementById(id);
-let gender = null, nameTxt = 'BABY';
+let gender = 'boy', nameTxt = 'BABY BOY';   // the answer is fixed
 let A = null, master = null;
 let taps = 0, running = false, tStart = 0, beatTimer = null, raf = null;
 let lastBpmUpdate = 0, bpmShown = 0, lastFrame = 0;
@@ -308,21 +298,21 @@ function wordHit(){ tone('sine', 220, 80, .12, .45); noise(.04, .25, 3000); }
 function boom(){ tone('sine', 150, 32, .5, 1); noise(.25, .5, 1200); hitmarker(); }
 function vib(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
 
-/* ---------- setup ---------- */
-document.querySelectorAll('#setup .btn').forEach(b => {
-  b.addEventListener('click', () => {
-    try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); }catch(e){}
-    ac();
-    loadMusic();   // decode the song in the background while the pack screen is open
-    gender = b.dataset.g;
-    resetPack();
-    go('pack-screen');
-  });
-});
+/* ---------- start ---------- */
+// iPhone only allows sound after a touch, so the first touch on the page unlocks it
+let unlocked = false;
+function unlock(){
+  ac();
+  loadMusic();
+  if(unlocked) return;
+  unlocked = true;
+  try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); }catch(e){}
+}
+['touchend', 'click'].forEach(ev => document.addEventListener(ev, unlock, {passive: true}));
 
 /* ---------- pack ---------- */
 function buildPack(){
-  const inner = '<div class="pk-in"><div class="pk-top">PREMIUM</div><div class="pk-ball">&#128118;</div>' +
+  const inner = '<div class="pk-in"><div class="pk-top">PREMIUM</div><div class="pk-ball">&#128102;&#128103;</div>' +
     '<div class="pk-title">DANIEL<br>&amp; INGVILD</div><div class="pk-sub">BABY REVEAL &bull; 1 KORT</div></div>';
   $('pack').innerHTML = '<div class="half top">' + inner + '</div><div class="half bot">' + inner + '</div>';
 }
@@ -757,7 +747,9 @@ function clearReveal(){
   $('burst').style.opacity = 0;
 }
 $('again').addEventListener('click', () => { ac(); clearReveal(); resetPack(); go('pack-screen'); });
-$('newone').addEventListener('click', () => { clearReveal(); gender = null; go('setup'); });
+// open on the pack and start loading the song right away
+resetPack();
+loadMusic();
 
 })();
 </script>
