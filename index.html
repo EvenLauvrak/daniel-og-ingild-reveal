@@ -434,10 +434,10 @@ function drawTug(dt, e){
   }
   tc.restore();
 
-  // the two hearts grow and shrink with the ground they hold
+  // the heart grows and shrinks with the ground pink holds
   tc.textAlign = 'center'; tc.textBaseline = 'middle';
-  const sBlue = 40 + 110 * seam.pos, sPink = 40 + 110 * (1 - seam.pos);
-  tc.font = sBlue + 'px serif'; tc.fillText('💙', seam.pos * W / 2, H * .17);
+  // only the pink heart is shown on purpose, so the screen never points to the answer
+  const sPink = 40 + 110 * (1 - seam.pos);
   tc.font = sPink + 'px serif'; tc.fillText('💗', seam.pos * W + (1 - seam.pos) * W / 2, H * .17);
 
   // darken so the words stay readable
